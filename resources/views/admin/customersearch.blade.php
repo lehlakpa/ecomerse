@@ -1,0 +1,1 @@
+<form class="search-form" method="get" action="{{ route('products.index') }}"><label class="sr-only" for="customer-search">Search products</label><input id="customer-search" type="search" name="search" maxlength="100" value="{{ request('search') }}" placeholder="Search products?"><button>Search</button></form>

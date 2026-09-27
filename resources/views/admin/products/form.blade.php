@@ -1,0 +1,10 @@
+<h2>Product details</h2><p class="muted">Tell your customers what makes this one special.</p>
+<label>Product title<input name="title" maxlength="255" value="{{ old('title', $product->title ?? '') }}" required></label>
+<div class="form-grid"><label>Price (Rs.)<input type="number" name="price" min="0" max="99999999.99" step="0.01" value="{{ old('price', $product->price ?? '') }}" required></label><label>Rating (0?5)<input type="number" name="rating" min="0" max="5" step="0.1" value="{{ old('rating', $product->rating ?? 0) }}"></label></div>
+<label>Description<textarea name="description" rows="5" maxlength="10000" required>{{ old('description', $product->description ?? '') }}</textarea></label>
+@foreach(['sizes' => ['XS', 'S', 'M', 'L', 'XL', 'XXL'], 'colors' => ['Black', 'White', 'Blue', 'Green', 'Beige', 'Red']] as $field => $defaults)
+<fieldset><legend>{{ ucfirst($field) }} <span class="muted">? optional</span></legend><div class="checkbox-options">@foreach(array_unique(array_merge($defaults, isset($product) ? ($product->{$field} ?? []) : [])) as $option)<label><input type="checkbox" name="{{ $field }}[]" value="{{ $option }}" @checked(in_array($option, old($field, isset($product) && !session()->hasOldInput() ? $product->{$field} ?? [] : [])))>{{ $option }}</label>@endforeach</div></fieldset>
+@endforeach
+<div class="form-divider"><h2>Product photography</h2><p class="muted">Up to 6 JPG, PNG or WebP images, 5 MB each. {{ isset($product) ? 'Leave empty to keep current images; new images replace the entire set.' : 'Add at least one image.' }}</p></div>
+@if(isset($product))<div class="thumbnails">@foreach($product->images as $image)<img class="existing-image" src="{{ $image->image_url }}" alt="Current image {{ $loop->iteration }}">@endforeach</div>@endif
+<label class="upload-zone">Choose product images<input type="file" name="images[]" accept="image/jpeg,image/png,image/webp" multiple @required(!isset($product)) data-preview-input></label><div class="thumbnails" data-preview-container aria-live="polite"></div>
