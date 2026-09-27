@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
 use App\Models\Product;
 use App\Services\CloudinaryService;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -50,7 +51,20 @@ class ProductController extends Controller
             foreach ($request->file('images', []) as $image) {
                 $uploads[] = $cloudinary->upload($image);
             }
+        } catch (Throwable $exception) {
+            foreach ($uploads as $upload) {
+                $this->cleanImage($cloudinary, $upload['public_id']);
+            }
+            report($exception);
 
+            $message = $exception instanceof RequestException && in_array($exception->response->status(), [401, 403], true)
+                ? 'Image storage rejected the upload. Correct the Cloudinary credentials or select local image storage, then select your images again.'
+                : 'The new images could not be uploaded. Please select them again and retry. If this continues, check the image storage connection and write permissions.';
+
+            return back()->withInput()->withErrors(['images' => $message.' No product changes were saved.']);
+        }
+
+        try {
             DB::transaction(function () use ($request, $product, $uploads): void {
                 $data = $request->safe()->except('images');
                 $product->fill([...$data, 'rating' => $data['rating'] ?? 0, 'sizes' => $data['sizes'] ?? [], 'colors' => $data['colors'] ?? []])->save();
@@ -67,7 +81,7 @@ class ProductController extends Controller
             }
             report($exception);
 
-            return back()->withInput()->withErrors(['images' => 'Unable to save the product. Check image storage configuration and try again.']);
+            return back()->withInput()->withErrors(['product' => 'Unable to save the product details. Please try again. No product changes were saved.']);
         }
 
         foreach ($oldImages as $image) {

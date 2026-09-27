@@ -52,6 +52,39 @@ class ShopTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_admin_collection_preview_shows_edit_controls_instead_of_checkout(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $product = Product::factory()->create(['sizes' => ['M'], 'colors' => ['Blue']]);
+
+        $this->actingAs($admin)->get(route('products.index'))
+            ->assertOk()
+            ->assertSee('YOUR STOREFRONT')
+            ->assertSee('Store administrator')
+            ->assertDontSee('Order in a few simple steps');
+
+        $this->get(route('products.show', $product))
+            ->assertOk()
+            ->assertSee('Edit product')
+            ->assertSee(route('admin.products.edit', $product))
+            ->assertSee('Blue')
+            ->assertDontSee('Delivery details')
+            ->assertDontSee('Place order')
+            ->assertDontSee(route('orders.store', $product));
+    }
+
+    public function test_customer_product_page_keeps_checkout_and_member_profile(): void
+    {
+        $product = Product::factory()->create();
+
+        $this->actingAs(User::factory()->create())->get(route('products.show', $product))
+            ->assertOk()
+            ->assertSee('Member')
+            ->assertSee('Delivery details')
+            ->assertSee('Place order')
+            ->assertDontSee('Edit product');
+    }
+
     #[DataProvider('weakRegistrationPasswords')]
     public function test_registration_rejects_weak_passwords(string $password): void
     {
@@ -200,6 +233,61 @@ class ShopTest extends TestCase
         $this->assertStringStartsWith('/storage/products/', $image->image_url);
         Storage::disk('public')->assertExists(substr($image->image_public_id, 6));
         Http::assertNothingSent();
+    }
+
+    public function test_edit_with_an_empty_browser_upload_keeps_existing_images(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
+        $product = Product::factory()->create();
+        $image = $product->images()->create(['image_url' => '/storage/products/existing.png', 'image_public_id' => 'local:products/existing.png']);
+        $this->mock(CloudinaryService::class)->shouldNotReceive('upload');
+
+        $this->call('POST', route('admin.products.update', $product), [
+            ...$this->productData(), '_method' => 'PUT', 'title' => 'Edited without an image',
+        ], [], ['images' => ['name' => [''], 'type' => [''], 'tmp_name' => [''], 'error' => [UPLOAD_ERR_NO_FILE], 'size' => [0]]])
+            ->assertRedirect(route('admin.products.index'))->assertSessionHasNoErrors();
+
+        $this->assertSame('Edited without an image', $product->fresh()->title);
+        $this->assertTrue($product->images()->sole()->is($image));
+    }
+
+    public function test_edit_replaces_images_locally_even_with_invalid_cloud_credentials(): void
+    {
+        Storage::fake('public');
+        Http::preventStrayRequests();
+        config(['cloudinary.storage' => 'local', 'cloudinary.cloud_name' => 'configured-cloud', 'cloudinary.api_key' => 'invalid', 'cloudinary.api_secret' => 'invalid']);
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
+        $product = Product::factory()->create();
+        Storage::disk('public')->put('products/old.png', 'old image');
+        $product->images()->create(['image_url' => '/storage/products/old.png', 'image_public_id' => 'local:products/old.png']);
+
+        $this->post(route('admin.products.update', $product), [
+            ...$this->productData(), '_method' => 'PUT', 'images' => [$this->image()],
+        ])->assertRedirect(route('admin.products.index'))->assertSessionHasNoErrors();
+
+        $image = $product->images()->sole();
+        Storage::disk('public')->assertExists(substr($image->image_public_id, 6));
+        Storage::disk('public')->assertMissing('products/old.png');
+        Http::assertNothingSent();
+    }
+
+    public function test_rejected_cloud_upload_explains_credentials_and_preserves_product(): void
+    {
+        config(['cloudinary.storage' => 'cloudinary', 'cloudinary.cloud_name' => 'test-cloud', 'cloudinary.api_key' => 'invalid', 'cloudinary.api_secret' => 'invalid']);
+        Http::preventStrayRequests();
+        Http::fake(['*/image/upload' => Http::response(['error' => ['message' => 'Invalid Signature']], 401)]);
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
+        $product = Product::factory()->create(['title' => 'Original product']);
+        $image = $product->images()->create(['image_url' => '/storage/products/original.png', 'image_public_id' => 'local:products/original.png']);
+
+        $this->from(route('admin.products.edit', $product))->post(route('admin.products.update', $product), [
+            ...$this->productData(), '_method' => 'PUT', 'images' => [$this->image()],
+        ])->assertRedirect(route('admin.products.edit', $product))
+            ->assertSessionHasErrors(['images' => 'Image storage rejected the upload. Correct the Cloudinary credentials or select local image storage, then select your images again. No product changes were saved.']);
+
+        $this->assertSame('Original product', $product->fresh()->title);
+        $this->assertTrue($product->images()->sole()->is($image));
+        Http::assertSentCount(1);
     }
 
     private function orderData(): array

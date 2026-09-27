@@ -3,28 +3,31 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Everyday essentials') ? Ecomerse</title>
+    <title>@yield('title', 'Everyday essentials') &middot; Ecomerse</title>
     <meta name="description" content="Discover your everyday essentials at Ecomerse. Browse the collection and order in a few simple steps.">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
-<div class="announcement">Good finds. Everyday essentials.</div>
+<div class="announcement">Considered essentials. Made for your everyday.</div>
 <header class="site-header">
     <div class="container header-inner">
         <a class="brand" href="{{ route('home') }}"><span class="brand-icon" aria-hidden="true">e.</span> ecomerse<span class="brand-dot">.</span></a>
-        <button class="menu-toggle secondary" type="button" aria-controls="navigation" aria-expanded="false">Menu <span aria-hidden="true">?</span></button>
+        <button class="menu-toggle secondary" type="button" aria-controls="navigation" aria-expanded="false">Menu <span aria-hidden="true">&#9776;</span></button>
         <nav id="navigation" class="navigation" aria-label="Main navigation">
             <a class="{{ request()->routeIs('home', 'products.*') ? 'active' : '' }}" href="{{ route('products.index') }}">Shop collection</a>
             @auth
                 @if(auth()->user()->isAdmin())
                     <a class="{{ request()->routeIs('admin.*') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">Admin workspace</a>
                 @endif
-                <span class="muted">Hi, {{ auth()->user()->name }}</span>
+                <div class="profile-chip">
+                    <span class="profile-avatar" aria-hidden="true">{{ mb_strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}</span>
+                    <div class="profile-copy"><strong>{{ auth()->user()->name }}</strong><span>{{ auth()->user()->isAdmin() ? 'Store administrator' : 'Member' }}</span></div>
+                </div>
                 <form action="{{ route('logout') }}" method="post">@csrf<button class="secondary small">Sign out</button></form>
             @else
                 <a href="{{ route('login') }}">Sign in</a>
-                <a class="button small" href="{{ route('register') }}">Create account <span aria-hidden="true">?</span></a>
+                <a class="button small" href="{{ route('register') }}">Create account <span aria-hidden="true">&rarr;</span></a>
             @endauth
         </nav>
     </div>
@@ -43,6 +46,6 @@
     @endif
     @yield('content')
 </main>
-<footer class="container site-footer"><a class="brand" href="{{ route('home') }}">ecomerse.</a><p>Considered essentials. Simply yours.</p><span>? {{ date('Y') }} Ecomerse</span></footer>
+<footer class="container site-footer"><a class="brand" href="{{ route('home') }}">ecomerse.</a><p>Considered essentials. Simply yours.</p><span>&copy; {{ date('Y') }} Ecomerse</span></footer>
 </body>
 </html>

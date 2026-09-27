@@ -12,6 +12,12 @@ document.addEventListener('keydown', (event) => {
         toggle.focus();
     }
 });
+
+const desktopNavigation = window.matchMedia('(min-width: 1101px)');
+desktopNavigation.addEventListener('change', () => {
+    toggle?.setAttribute('aria-expanded', 'false');
+    navigation?.classList.remove('is-open');
+});
 document.querySelectorAll('[data-image]').forEach(button => {
     button.addEventListener('click', () => {
         document.querySelector('#main-product-image').src = button.dataset.image;
