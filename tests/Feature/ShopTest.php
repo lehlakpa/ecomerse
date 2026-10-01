@@ -99,7 +99,7 @@ class ShopTest extends TestCase
     public static function weakRegistrationPasswords(): array
     {
         return [
-            'only eight characters' => ['Aa1@bcde'],
+            'only six characters' => ['Aa1@bc'],
             'missing uppercase' => ['password@123'],
             'missing lowercase' => ['PASSWORD@123'],
             'missing number' => ['Password@abc'],
@@ -107,14 +107,14 @@ class ShopTest extends TestCase
         ];
     }
 
-    public function test_registration_accepts_nine_characters_with_all_required_character_types(): void
+    public function test_registration_accepts_seven_characters_with_all_required_character_types(): void
     {
         $this->post('/register', [
             'name' => 'Jane Doe', 'username' => 'jane', 'phone' => '9800000000',
-            'password' => 'Aa1@bcdef', 'password_confirmation' => 'Aa1@bcdef',
+            'password' => 'Aa1@bcd', 'password_confirmation' => 'Aa1@bcd',
         ])->assertSessionHasNoErrors()->assertRedirect('/');
         $this->assertAuthenticated();
-        $this->assertTrue(Hash::check('Aa1@bcdef', User::firstOrFail()->password));
+        $this->assertTrue(Hash::check('Aa1@bcd', User::firstOrFail()->password));
     }
 
     public function test_registration_rejects_mismatched_password_confirmation(): void

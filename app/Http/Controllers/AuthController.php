@@ -27,7 +27,7 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'username' => ['required', 'string', 'max:50', 'unique:users'],
             'phone' => ['required', 'string', 'max:20'],
-            'password' => ['required', 'string', 'confirmed', Password::min(9)->mixedCase()->numbers()->symbols()],
+            'password' => ['required', 'string', 'confirmed', Password::min(7)->mixedCase()->numbers()->symbols()],
         ]);
 
         $user = User::create([

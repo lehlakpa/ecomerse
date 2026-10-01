@@ -1,3 +1,29 @@
+document.querySelectorAll('input[type="password"]').forEach(input => {
+    const label = input.closest('label');
+    if (!label) return;
+
+    const field = document.createElement('div');
+    field.className = 'password-field';
+    label.before(field);
+    field.append(label);
+
+    input.id ||= `password-${input.name}`;
+    const passwordLabel = input.name === 'password_confirmation' ? 'confirmation password' : 'password';
+    const visibilityButton = document.createElement('button');
+    visibilityButton.type = 'button';
+    visibilityButton.className = 'password-toggle secondary';
+    visibilityButton.textContent = 'Show';
+    visibilityButton.setAttribute('aria-controls', input.id);
+    visibilityButton.setAttribute('aria-label', `Show ${passwordLabel}`);
+    visibilityButton.addEventListener('click', () => {
+        const isHidden = input.type === 'password';
+        input.type = isHidden ? 'text' : 'password';
+        visibilityButton.textContent = isHidden ? 'Hide' : 'Show';
+        visibilityButton.setAttribute('aria-label', `${isHidden ? 'Hide' : 'Show'} ${passwordLabel}`);
+    });
+    field.append(visibilityButton);
+});
+
 const toggle = document.querySelector('.menu-toggle');
 const navigation = document.querySelector('#navigation');
 toggle?.addEventListener('click', () => {

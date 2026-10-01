@@ -192,6 +192,10 @@ input, select, textarea { max-width: 100%; font-size: 16px; }
     .site-footer p, .site-footer > span { flex: 1 1 100%; }
 }
 
+.password-field { position: relative; min-width: 0; }
+.password-field input { padding-right: 82px; }
+.password-toggle { position: absolute; right: 1px; bottom: 1px; min-height: 44px; width: 72px; padding: 8px; border: 0; border-radius: 0 5px 5px 0; font-size: 13px; }
+
 @media (max-width: 380px) {
     .brand { font-size: 21px; }
     .brand-icon { margin-right: 6px; }
